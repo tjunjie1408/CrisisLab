@@ -1,0 +1,13 @@
+.git
+.venv
+.codegraph
+.pytest_cache
+.ruff_cache
+**/__pycache__
+data/raw
+data/processed
+mlflow.db*
+mlartifacts
+tests
+record
+docs
