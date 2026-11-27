@@ -1,0 +1,67 @@
+[pit]
+# Approximate Point-in-Time (PIT) assumption:
+# FFIEC bulk Call Reports generally publish ~45 calendar days after quarter-end;
+# 60 days is used as a conservative Approximate PIT buffer.
+# Known Limitation: FDIC public Call Reports include historical restatements.
+reporting_lag_days = 60
+horizon_days = 365
+
+# In FDIC /failures, RESTYPE='ASSISTANCE' (e.g., 2009 Open Bank Assistance OBAM
+# for Bank of America / Citigroup) did NOT close the bank. Primary target strictly
+# tracks RESTYPE='FAILURE' (receivership/closure); OBAM is tracked for sensitivity.
+include_open_bank_assistance = false
+
+[panel]
+start_year = 2000
+end_year = 2016
+quarters = ["0331", "0630", "0930", "1231"]
+
+# Verified against FDIC BankFind /financials schema (CAMELS proxy indicators)
+core_camels_fields = [
+    "ASSET",      # Scale: Total assets ($ thousands)
+    "DEP",        # Liquidity/Funding: Total deposits
+    "EQ",         # Capital: Total equity capital
+    "EQV",        # Capital: Equity capital to assets (%)
+    "RBC1AAJ",    # Capital: Tier 1 leverage ratio (%)
+    "RBCRWAJ",    # Capital: Total risk-based capital ratio (%)
+    "NCLNLSR",    # Asset Quality: Noncurrent loans to total loans (%)
+    "NTLNLSR",    # Asset Quality: Net loan charge-offs to loans (%)
+    "LNATRESR",   # Asset Quality: Loan loss allowance to loans (%)
+    "ORE",        # Asset Quality: Other real estate owned ($ thousands)
+    "EEFFR",      # Management: Efficiency ratio (%)
+    "ROA",        # Earnings: Return on assets (%)
+    "ROE",        # Earnings: Return on equity (%)
+    "NIMY",       # Earnings: Net interest margin (%)
+    "LNLSDEPR",   # Liquidity: Net loans & leases to deposits (%)
+    "COREDEP",    # Liquidity: Core deposits ($ thousands)
+    "DEPUNINS",   # Sensitivity/Funding: Uninsured deposits ($ thousands)
+]
+
+[reproducibility]
+random_seed = 42
+lightgbm_deterministic = true
+lightgbm_force_col_wise = true
+
+[tracking]
+enabled = true
+tracking_uri = "sqlite:///mlflow.db"
+artifact_root = "mlartifacts"
+p0_experiment_name = "crisislab-p0-data-audit"
+p1_experiment_name = "crisislab-p1-data-centric-baselines"
+
+p2_experiment_name = "crisislab-p2-batch-scoring"
+p3_experiment_name = "crisislab-p3-model-registry"
+registered_model_name = "crisislab-bank-failure-ews"
+production_alias = "champion"
+
+[scoring]
+model = "lgbm"
+feature_set = "camels_with_trends"
+calibration = "platt"
+top_budget_pct = 2.0
+tier_critical_threshold = 0.05
+tier_high_threshold = 0.01
+tier_elevated_threshold = 0.0025
+psi_moderate_threshold = 0.10
+psi_significant_threshold = 0.25
+psi_bins = 10
